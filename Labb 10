@@ -1,6 +1,7 @@
 from molgrafik import *
 from linkedQFile import LinkedQ
 from tkinter import *
+from atomweights import *
 
 # Molekyler som vi vill rita upp: O, CO2 och (CH3)2(CH2)4.
 # Vill ha pekarna next och down i binärträdet.
@@ -45,7 +46,9 @@ def check_syntax(molecule):
     try:
         mg = Molgrafik()
         mol = read_formula(molecule)
+        weight = total_weight(mol)
         mg.show(mol)
+        print('Vikt: ' + str(weight))
         return "Formeln är syntaktiskt korrekt"
     except Syntax_error as error:
         return str(error)
@@ -78,15 +81,17 @@ def read_group(molecule): # Kontrollera grupp
     square = Ruta() # Skapa en ruta
     if molecule.peek().isalpha(): # Kontrollera att det är en bokstav
         square.atom, square.num = read_atom(molecule, square)
-
     elif molecule.peek() == "(": # Kontrollera om det är en vänsterparentes
         molecule.dequeue()
         square.down = read_group(molecule)
-
         if molecule.peek() == ")": # Kontrollera om det är en högerparentes
             molecule.dequeue()
             if molecule.peek().isdigit(): # Kontrollera om det är en siffra efter högerparentesen
                 square.num = read_numbers(molecule)
+                if molecule.peek() == "(": # om det kommer ännu fler parenteser efter att de föregående har stängts
+                    square.next = read_group(molecule)
+                elif molecule.peek() != "." and molecule.peek() != ")": # behövs för att fortsätta kontrollera syntaxen
+                    square.next = read_group(molecule)
             else:
                     raise Syntax_error("Saknad siffra vid radslutet " + rest_molecule(molecule))
         else:
@@ -105,7 +110,7 @@ def read_atom(molecule, square): # Kontrollera atom
             square.next = read_group(molecule)
         return atom, num
     else:
-        if molecule.peek() != "." and molecule.peek() != ")":
+        if molecule.peek() != "." and molecule.peek() != ")" and molecule.peek() != "(":
             square.next = read_group(molecule)
     num = 1
     return atom, num
@@ -135,19 +140,45 @@ def read_numbers(molecule): # kontrollera nummer
         return num
     raise Syntax_error("För litet tal vid radslutet " + nr_str[1:] + rest_molecule(molecule)) 
 
+    
+
+def total_weight(mol): # fungerar ej med parenteser
+    '''with open('atomweights.txt', 'r') as file:
+        for line in file:
+            data = line.split()
+            if mol.atom == data[0]: # Kontrollera om atomen finns i fil
+                atom_weight = float(data[1]) # Konvertera den tillhörande vikten till float
+                weight += atom_weight * mol.num
+                print(weight)
+                print(mol.atom)
+                print(mol.num)
+
+                if mol.next != None:
+                    if mol.next.atom != '()':
+                        weight = get_weight(mol.next, weight)
+                    elif mol.next.atom == '()' and mol.next.down != None:
+                        weight = get_weight(mol.next.down, weight)'''
+    if mol.atom !='()':
+        atom_weight = atom_weights[mol.atom]  
+        weight = atom_weight* mol.num
+        if mol.next is not None:
+            weight += total_weight(mol.next)
+    elif mol.atom == '()' and mol.down is not None:
+        weight = total_weight(mol.down) * mol.num 
+    return weight
+    
+
 
 def main(): # Huvudfunktionen
-    
-    molecule = input("Ange en molekyl: ") # Fråga användaren efter en molekyl
+    molecule = 'Si(C3(COOH)2)4(H2O)7' 
     while molecule != "#": # Om det inte är en hashtag så körs funktionen
         result = check_syntax(molecule)
         print(result)
         molecule = input("Ange en molekyl: ")
 
 
-
 # Kör huvudfunktionen
-#main()
+main()
 
 
 import unittest
@@ -155,11 +186,12 @@ class SyntaxTest(unittest.TestCase):
     
     # Testet fungerar på det sättet att du skriver given input och förklarar vad som ska komma ut från det
     def testSubjmolekyl(self):
-        self.assertEqual(check_syntax('O2((CH)2)2'), "Formeln är syntaktiskt korrekt")
+        self.assertEqual(check_syntax('O(C2(HOOH)2)2'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('CO2'), "Formeln är syntaktiskt korrekt")
-        self.assertEqual(check_syntax('(C2H3)2(CH2)4'), "Formeln är syntaktiskt korrekt")
+        self.assertEqual(check_syntax('(CH3)2(CH2)4'), "Formeln är syntaktiskt korrekt")
+        self.assertEqual(check_syntax('Si(C3(COOH)2)4(H2O)7'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('H)H'), "Felaktig gruppstart vid radslutet )H")
         self.assertEqual(check_syntax("C(Xx4)5"), "Okänd atom vid radslutet 4)5")
 
-if __name__ == '__main__':
-    unittest.main() 
+'''if __name__ == '__main__':
+    unittest.main() '''
