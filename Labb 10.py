@@ -71,26 +71,20 @@ def read_formula(molecule): # Kontrollera formeln
 
 def read_molecule(molecule):
     mol = read_group(molecule) # Kontrollera grupp
-    if molecule.peek() != "." and molecule.peek() != ")":
-        mol.next = read_group(molecule)
     return mol
     
 
     
 def read_group(molecule): # Kontrollera grupp
     square = Ruta() # Skapa en ruta
-    if molecule.peek().isalpha(): # Kontrollera att det är en bokstav
-        square.atom, square.num = read_atom(molecule, square)
-    elif molecule.peek() == "(": # Kontrollera om det är en vänsterparentes
+    if molecule.peek() == "(": # Kontrollera om det är en vänsterparentes
         molecule.dequeue()
         square.down = read_group(molecule)
         if molecule.peek() == ")": # Kontrollera om det är en högerparentes
             molecule.dequeue()
             if molecule.peek().isdigit(): # Kontrollera om det är en siffra efter högerparentesen
                 square.num = read_numbers(molecule)
-                if molecule.peek() == "(": # om det kommer ännu fler parenteser efter att de föregående har stängts
-                    square.next = read_group(molecule)
-                elif molecule.peek() != "." and molecule.peek() != ")": # behövs för att fortsätta kontrollera syntaxen
+                if molecule.peek() == "(":# om det kommer ännu fler parenteser efter att de föregående har stängts
                     square.next = read_group(molecule)
             else:
                     raise Syntax_error("Saknad siffra vid radslutet " + rest_molecule(molecule))
@@ -98,6 +92,10 @@ def read_group(molecule): # Kontrollera grupp
             raise Syntax_error("Saknad högerparentes vid radslutet " + rest_molecule(molecule))
     elif molecule.peek().isdigit():
         raise Syntax_error("Felaktig gruppstart vid radslutet " + rest_molecule(molecule))
+    else:
+        square.atom, square.num = read_atom(molecule, square)
+        if molecule.peek() != '.' and molecule.peek() != ')':
+            square.next = read_group(molecule)
 
     return square
 
@@ -155,7 +153,6 @@ def total_weight(mol): # fungerar ej med parenteser
     elif mol.atom == '()' and mol.down is not None and mol.next is None:
         weight = total_weight(mol.down) * mol.num
 
-        
     return weight
     
 
@@ -169,7 +166,7 @@ def main(): # Huvudfunktionen
 
 
 # Kör huvudfunktionen
-main()
+#main()
 
 
 import unittest
@@ -178,11 +175,12 @@ class SyntaxTest(unittest.TestCase):
     # Testet fungerar på det sättet att du skriver given input och förklarar vad som ska komma ut från det
     def testSubjmolekyl(self):
         self.assertEqual(check_syntax('O(C2(HOOH)2)2'), "Formeln är syntaktiskt korrekt")
-        self.assertEqual(check_syntax('CO2'), "Formeln är syntaktiskt korrekt")
+        self.assertEqual(check_syntax('NaCl(H2)2'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('(CH3)2(CH2)4'), "Formeln är syntaktiskt korrekt") # ska väga 86.17
+        self.assertEqual(check_syntax('Si(H5(OH2)4)2(NaCl)2'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('Si(C3(COOH)2)4(H2O)7'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('H)H'), "Felaktig gruppstart vid radslutet )H")
         self.assertEqual(check_syntax("C(Xx4)5"), "Okänd atom vid radslutet 4)5")
 
-'''if __name__ == '__main__':
-    unittest.main() '''
+if __name__ == '__main__':
+    unittest.main()
