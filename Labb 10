@@ -143,34 +143,25 @@ def read_numbers(molecule): # kontrollera nummer
     
 
 def total_weight(mol): # fungerar ej med parenteser
-    '''with open('atomweights.txt', 'r') as file:
-        for line in file:
-            data = line.split()
-            if mol.atom == data[0]: # Kontrollera om atomen finns i fil
-                atom_weight = float(data[1]) # Konvertera den tillhörande vikten till float
-                weight += atom_weight * mol.num
-                print(weight)
-                print(mol.atom)
-                print(mol.num)
-
-                if mol.next != None:
-                    if mol.next.atom != '()':
-                        weight = get_weight(mol.next, weight)
-                    elif mol.next.atom == '()' and mol.next.down != None:
-                        weight = get_weight(mol.next.down, weight)'''
     if mol.atom !='()':
         atom_weight = atom_weights[mol.atom]  
-        weight = atom_weight* mol.num
+        weight = atom_weight * mol.num
         if mol.next is not None:
             weight += total_weight(mol.next)
-    elif mol.atom == '()' and mol.down is not None:
-        weight = total_weight(mol.down) * mol.num 
+    elif mol.atom == '()' and mol.down is not None and mol.next is not None:
+        weight_down = total_weight(mol.down) * mol.num
+        weight_next = total_weight(mol.next)
+        weight = weight_down + weight_next
+    elif mol.atom == '()' and mol.down is not None and mol.next is None:
+        weight = total_weight(mol.down) * mol.num
+
+        
     return weight
     
 
 
 def main(): # Huvudfunktionen
-    molecule = 'Si(C3(COOH)2)4(H2O)7' 
+    molecule = '(CH3)2(CH2)4' 
     while molecule != "#": # Om det inte är en hashtag så körs funktionen
         result = check_syntax(molecule)
         print(result)
@@ -188,7 +179,7 @@ class SyntaxTest(unittest.TestCase):
     def testSubjmolekyl(self):
         self.assertEqual(check_syntax('O(C2(HOOH)2)2'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('CO2'), "Formeln är syntaktiskt korrekt")
-        self.assertEqual(check_syntax('(CH3)2(CH2)4'), "Formeln är syntaktiskt korrekt")
+        self.assertEqual(check_syntax('(CH3)2(CH2)4'), "Formeln är syntaktiskt korrekt") # ska väga 86.17
         self.assertEqual(check_syntax('Si(C3(COOH)2)4(H2O)7'), "Formeln är syntaktiskt korrekt")
         self.assertEqual(check_syntax('H)H'), "Felaktig gruppstart vid radslutet )H")
         self.assertEqual(check_syntax("C(Xx4)5"), "Okänd atom vid radslutet 4)5")
